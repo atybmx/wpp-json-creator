@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Gerador de JSON com Unicode</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    input, textarea { margin: 5px 0; padding: 5px; width: 400px; }
+    textarea { height: 120px; }
+    button { margin: 5px 0; padding: 5px 10px; }
+    pre { background: #f4f4f4; padding: 10px; border: 1px solid #ccc; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h2>Gerador de JSON</h2>
+
+  <label>URL:</label><br>
+  <input type="text" id="url" placeholder="Digite a URL"><br>
+
+  <label>Footer:</label><br>
+  <input type="text" id="footer" placeholder="Digite o Footer" value="MULTIBET"><br>
+
+  <label>Message:</label><br>
+  <textarea id="message" placeholder="Digite a mensagem"></textarea><br>
+
+  <h3>Adicionar Botão:</h3>
+  <input type="text" id="buttonText" placeholder="Texto do botão">
+  <input type="text" id="buttonLink" placeholder="Link do botão">
+  <button onclick="addButton()">Adicionar</button><br>
+
+  <h3>JSON Gerado:</h3>
+  <pre id="output"></pre>
+  <button onclick="copyToClipboard()">Copiar JSON</button>
+
+  <script>
+    const buttons = [];
+
+    // Função para converter string em Unicode escape
+    function toUnicodeEscape(str) {
+      return str.replace(/[\s\S]/g, function(char) {
+        const code = char.charCodeAt(0);
+        if (code < 128) {
+          return char; // mantém ASCII
+        }
+        return "\\u" + ("0000" + code.toString(16)).slice(-4);
+      })
+      .replace(/%r%n/g, "\\r\\n"); // substitui %r%n por \r\n
+    }
+
+    function addButton() {
+      const btnText = document.getElementById("buttonText").value.trim();
+      const btnLink = document.getElementById("buttonLink").value.trim();
+      if (btnText && btnLink) {
+        const btnTextUnicode = toUnicodeEscape(btnText);
+        buttons.push(`${btnTextUnicode}|${btnLink}`);
+        document.getElementById("buttonText").value = "";
+        document.getElementById("buttonLink").value = "";
+        generateJSON();
+      } else {
+        alert("Preencha os dois campos: Texto e Link do botão.");
+      }
+    }
+
+    function generateJSON() {
+      const url = document.getElementById("url").value.trim() || "URL";
+      const footer = document.getElementById("footer").value.trim() || "MULTIBET";
+      const messageRaw = document.getElementById("message").value.trim();
+      const messageUnicode = toUnicodeEscape(messageRaw) || "MESSAGE";
+
+      // Monta manualmente o JSON
+      let jsonData = `{
+  "phone": "{{state.user_phone}}",
+  "type": "button",
+  "url": "${url}",
+  "message": "${messageUnicode}",
+  "footer": "${footer}"`;
+
+      if (buttons.length > 0) {
+        jsonData += `,
+  "buttons": ${JSON.stringify(buttons, null, 2)}`;
+      }
+
+      jsonData += `
+}`;
+
+      document.getElementById("output").textContent = jsonData;
+    }
+
+    function copyToClipboard() {
+      const text = document.getElementById("output").textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        alert("JSON copiado para o clipboard!");
+      });
+    }
+
+    // Atualiza JSON ao digitar nos campos
+    document.querySelectorAll("#url, #footer, #message").forEach(el => {
+      el.addEventListener("input", generateJSON);
+    });
+
+    // Inicializa com valores padrão
+    generateJSON();
+  </script>
+</body>
+</html>
