@@ -14,7 +14,7 @@
 <body>
   <h2>Gerador de JSON</h2>
 
-  <label>URL:</label><br>
+  <label>URL da imagem:</label><br>
   <input type="text" id="url" placeholder="Digite a URL"><br>
 
   <label>Footer:</label><br>
@@ -44,7 +44,8 @@
         }
         return "\\u" + ("0000" + code.toString(16)).slice(-4);
       })
-      .replace(/%r%n/g, "\\r\\n"); // substitui %r%n por \r\n
+      .replace(/\r?\n/g, "\\r\\n") // converte quebras de linha reais para \r\n
+      .replace(/%r%n/g, "\\r\\n"); // também converte %r%n para \r\n
     }
 
     function addButton() {
