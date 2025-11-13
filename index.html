@@ -63,6 +63,14 @@
       padding-top: 5px;
       border-top: 1px solid #dcdcdc;
     }
+
+    .alert {
+      position: fixed;
+      bottom: 20px;
+      right: 30px;
+      z-index: 1000;
+      display: none;
+    }
   </style>
 
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
@@ -71,11 +79,6 @@
 <body>
 
   <div class="container-fluid">
-    <div class="row">
-      <div class="col-md-12">
-        <h1>Gerador de JSON com Preview Estilo WhatsApp</h1>
-      </div>
-    </div>
     <div class="row">
       <div class="col-md-4">
         <h3>Monte a mensagem aqui:</h3>
@@ -119,7 +122,10 @@
     </div>
   </div>
 
-  
+  <div class="alert alert-success alert-dismissible fade show" role="alert" id="copy-alert">
+    <strong>JSON</strong> copiado para o clipboard!
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
 
   
 
@@ -205,11 +211,11 @@
     	    document.execCommand("copy");
     	    $temp.remove();
     	    
-    	    alert("JSON copiado para o clipboard!");
+          $('#copy-alert').fadeIn().delay(3000).fadeOut();
     	    return;
     	  }
     	  navigator.clipboard.writeText(text).then(function() {
-    	    alert("JSON copiado para o clipboard!");
+    	    $('#copy-alert').fadeIn().delay(3000).fadeOut();
     	  }, function(err) {
     	    console.error('Async: Could not copy text: ', err);
     	  });
