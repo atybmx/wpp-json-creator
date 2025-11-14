@@ -71,6 +71,9 @@
       z-index: 1000;
       display: none;
     }
+    .bold { font-weight: bold; }
+    .italic { font-style: italic; }
+    .strike { text-decoration: line-through; }
   </style>
 
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
@@ -96,6 +99,11 @@
           <div class="col-md-12">
             <label for="message">Message:</label>
             <textarea id="message" class="form-control" placeholder="Digite a mensagem"></textarea>
+            <div class="message-options">
+              <button class="btn btn-icon btn-secondary" onclick="applyStyle('*')"><i class="bi bi-type-bold"></i></button>
+              <button class="btn btn-icon btn-secondary" onclick="applyStyle('_')"><i class="bi bi-type-italic"></i></button>
+              <button class="btn btn-icon btn-secondary" onclick="applyStyle('~')"><i class="bi bi-type-strikethrough"></i></button>
+            </div>
           </div>
 
           <div class="col-md-12">
@@ -145,6 +153,22 @@
       .replace(/%r%n/g, "\\r\\n");
     }
 
+    function applyStyle(symbol) {
+      const textarea = document.getElementById("message");
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = textarea.value;
+
+      if (start !== end) {
+        const selected = text.substring(start, end);
+        const newText = text.substring(0, start) + symbol + selected + symbol + text.substring(end);
+        textarea.value = newText;
+        generateJSON();
+      } else {
+        alert("Selecione um trecho da mensagem para aplicar estilo.");
+      }
+    }
+
     function addButton() {
       const btnText = document.getElementById("buttonText").value.trim();
       const btnLink = document.getElementById("buttonLink").value.trim();
@@ -188,7 +212,11 @@
       let previewHTML = `
           <div class="bubble">
             ${url ? `<img src="${url}" class="img"/>` : '' }
-            <p>${messageRaw.replace(/\n/g, "<br>")}</p>
+            <p>${messageRaw
+                  .replace(/\n/g, "<br>")
+                  .replace(/\*(.*?)\*/g, "<span class='bold'>$1</span>")
+                  .replace(/_(.*?)_/g, "<span class='italic'>$1</span>")
+                  .replace(/~(.*?)~/g, "<span class='strike'>$1</span>")}</p>
             <div class="footer">${footer}<span class="datetime">${horaAtual}</span></div>`;
       if (buttonsHtml.length > 0) {  
         previewHTML += '<div class="buttons">';      
