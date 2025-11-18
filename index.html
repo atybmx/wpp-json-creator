@@ -10,7 +10,7 @@
     input, textarea { margin: 5px 0; padding: 5px; width: 400px; }
     textarea { height: 120px; }
     button { margin: 5px 0; padding: 5px 10px; }
-    pre { background: #f4f4f4; padding: 10px; border: 1px solid #ccc; white-space: pre-wrap; }
+    pre { background: #f4f4f4; padding: 10px; border: 1px solid #ccc; white-space: pre-wrap;min-height:380px;}
 
     /* Estilo do preview estilo WhatsApp */
     .whatsapp-preview {
@@ -20,6 +20,7 @@
       width: 400px;
       padding: 15px;
       margin-top: 20px;
+      min-height: 370px;
     }
     .bubble {
       background: #dcf8c6;
@@ -74,6 +75,10 @@
     .bold { font-weight: bold; }
     .italic { font-style: italic; }
     .strike { text-decoration: line-through; }
+
+    #history{display: flex;flex-wrap: wrap;align-items: flex-start;}
+    #history .bubble{cursor: pointer;width: 300px;margin: 10px;transition:all .3s ease;}
+    #history .bubble:hover{box-shadow:0 0 10px rgba(125,125,125,.5);}
   </style>
 
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
@@ -121,11 +126,22 @@
       <div class="col-md-4">
         <h3>JSON Gerado:</h3>
         <pre id="output"></pre>
-        <button class="btn btn-success" onclick="copyToClipboard()">Copiar JSON</button>
+        <button class="btn btn-success" onclick="copyToClipboard()"><i class="bi bi-copy"></i> Copiar JSON</button>
       </div>
       <div class="col-md-4">
         <h3>Preview WhatsApp:</h3>
         <div class="whatsapp-preview" id="preview"></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12"><hr></div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <h3>Histórico:</h3>
+        <button class="btn btn-danger mt-2" onclick="clearHistory()"><i class="bi bi-trash"></i> Limpar histórico</button>
+
+        <div id="history"></div>
       </div>
     </div>
   </div>
@@ -138,8 +154,90 @@
   
 
   <script>
+    let history = [];
+
     const buttons = [];
     const buttonsHtml = [];
+
+    window.onload = function() {
+      const saved = localStorage.getItem("messageHistory");
+      if (saved) {
+        history = JSON.parse(saved);
+        renderHistory();
+      }
+    };
+
+    function saveToHistory(entry) {
+      history.unshift(entry); // adiciona no início
+      if (history.length > 20) history = history.slice(0, 20); // limita a 20 itens
+      localStorage.setItem("messageHistory", JSON.stringify(history));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const container = document.getElementById("history");
+      container.innerHTML = "";
+      history.forEach((item, index) => {
+        const hora = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date());
+        let bubble = `<div class="bubble">
+          ${item.url ? `<img src="${item.url}" class="img"/>` : '' }
+          <p onclick="loadFromHistory(${index})">${item.message.replace(/\n/g, "<br>")
+            .replace(/\*(.*?)\*/g, "<span class='bold'>$1</span>")
+            .replace(/_(.*?)_/g, "<span class='italic'>$1</span>")
+            .replace(/~(.*?)~/g, "<span class='strike'>$1</span>")}</p>
+          <div class="footer">
+            ${item.footer}<span class="datetime">${hora}</span>
+            <button class="btn btn-sm btn-danger" onclick="removeFromHistory(${index})"><i class="bi bi-trash"></i></button>
+          </div>`;
+        if (item.buttons && item.buttons.length > 0) {
+          bubble += '<div class="buttons">';
+          item.buttons.forEach(btn => {
+            bubble += `<a href="${btn.link}" class="button"><i class="bi bi-arrow-up-right-square"></i> ${btn.text}</a>`;
+          });
+          bubble += '</div>';
+        }
+        bubble += '</div>';
+        container.innerHTML += bubble;
+      });
+    }
+
+    function loadFromHistory(index) {
+      const item = history[index];
+      if (!item) return;
+
+      // Recarrega os campos do editor
+      document.getElementById("url").value = item.url || "";
+      document.getElementById("footer").value = item.footer || "MULTIBET";
+      document.getElementById("message").value = item.message || "";
+
+      // Recarrega botões
+      buttons.length = 0;
+      buttonsHtml.length = 0;
+      if (item.buttons) {
+        item.buttons.forEach(btn => {
+          buttons.push(`${toUnicodeEscape(btn.text)}|${btn.link}`);
+          buttonsHtml.push({ text: btn.text, link: btn.link });
+        });
+      }
+
+      // Atualiza JSON e preview
+      generateJSON();
+
+      // Faz scroll para o topo
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function clearHistory() {
+      history = [];
+      localStorage.removeItem("messageHistory");
+      renderHistory();
+    }
+
+    function removeFromHistory(index) {
+      history.splice(index, 1); // remove o item
+      localStorage.setItem("messageHistory", JSON.stringify(history));
+      renderHistory();
+    }
 
     function toUnicodeEscape(str) {
       return str.replace(/[\s\S]/g, function(char) {
@@ -188,14 +286,16 @@
       const url = document.getElementById("url").value.trim() || "";
       const footer = document.getElementById("footer").value.trim() || "MULTIBET";
       const messageRaw = document.getElementById("message").value.trim();
-      const messageUnicode = toUnicodeEscape(messageRaw) || "MESSAGE";
+      const messageUnicode = toUnicodeEscape(messageRaw) || "";
+
+      if(!messageRaw) return;
 
       let jsonData = `{
         "phone": "{{state.user_phone}}",
         "type": "button",
-        "url": "${url}",
+        ${url ? `"url": "${url}",` : ''}
         "message": "${messageUnicode}",
-        "footer": "${footer}"`;
+        ${footer ? `"footer": "${footer}"` : ''}`;
 
             if (buttons.length > 0) {
               jsonData += `,
@@ -240,10 +340,29 @@
     	    $temp.remove();
     	    
           $('#copy-alert').fadeIn().delay(3000).fadeOut();
+
+          // Salva no histórico aqui
+          saveToHistory({
+            message: document.getElementById("message").value.trim(),
+            json: JSON.parse(text),
+            footer: document.getElementById("footer").value.trim(),
+            url: document.getElementById("url").value.trim(),
+            buttons: [...buttonsHtml]
+          });
+
     	    return;
     	  }
     	  navigator.clipboard.writeText(text).then(function() {
     	    $('#copy-alert').fadeIn().delay(3000).fadeOut();
+
+          // Salva no histórico aqui
+          saveToHistory({
+            message: document.getElementById("message").value.trim(),
+            json: JSON.parse(text),
+            footer: document.getElementById("footer").value.trim(),
+            url: document.getElementById("url").value.trim(),
+            buttons: [...buttonsHtml]
+          });
     	  }, function(err) {
     	    console.error('Async: Could not copy text: ', err);
     	  });
@@ -252,8 +371,6 @@
     document.querySelectorAll("#url, #footer, #message").forEach(el => {
       el.addEventListener("input", generateJSON);
     });
-
-    generateJSON();
   </script>
 </body>
 </html>
