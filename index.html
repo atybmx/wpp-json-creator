@@ -179,9 +179,9 @@
       container.innerHTML = "";
       history.forEach((item, index) => {
         const hora = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date());
-        let bubble = `<div class="bubble">
+        let bubble = `<div class="bubble" onclick="loadFromHistory(${index})">
           ${item.url ? `<img src="${item.url}" class="img"/>` : '' }
-          <p onclick="loadFromHistory(${index})">${item.message.replace(/\n/g, "<br>")
+          <p>${item.message.replace(/\n/g, "<br>")
             .replace(/\*(.*?)\*/g, "<span class='bold'>$1</span>")
             .replace(/_(.*?)_/g, "<span class='italic'>$1</span>")
             .replace(/~(.*?)~/g, "<span class='strike'>$1</span>")}</p>
